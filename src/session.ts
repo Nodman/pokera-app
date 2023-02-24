@@ -57,7 +57,6 @@ export class Session {
     try {
       const snapshot = await get(this.ref);
       const exists = snapshot.exists();
-      console.log(exists, snapshot);
 
       if (!exists) {
         const nextSessionData: SessionT = {
@@ -72,11 +71,19 @@ export class Session {
         await runTransaction(
           child(this.ref, "/users"),
           (users: NonNullable<SessionT["users"]>) => {
-            if (
-              !users ||
-              snapshot.val().hostId === user.id ||
-              users.find((item) => item.id === user.id)
-            ) {
+            if (!users) {
+              return users;
+            }
+
+            const foundUser = users.find((item) => item.id === user.id);
+
+            if (foundUser) {
+              if (foundUser.name !== user.name) {
+                return users.map((item) =>
+                  item.id === user.id ? { ...item, name: user.name } : item
+                );
+              }
+
               return users;
             }
 
@@ -109,21 +116,27 @@ export class Session {
   }
 
   vote(user: UserT, value: ScoreT) {
-    runTransaction(
-      child(this.ref, "issue/scores"),
-      (scores: NonNullable<SessionT["issue"]>["scores"]) => {
-        const nextScores = scores ?? [];
-        const index = nextScores.findIndex((item) => item.userId === user.id);
-
-        if (index >= 1) {
-          return nextScores.map((item) => {
-            return item.userId === user.id ? { ...item, value } : item;
-          });
-        }
-
-        return [...nextScores, { userId: user.id, value }];
+    get(this.ref).then((snapshot) => {
+      if (snapshot.val().users.length < 2) {
+        return;
       }
-    );
+
+      runTransaction(
+        child(this.ref, "issue/scores"),
+        (scores: NonNullable<SessionT["issue"]>["scores"]) => {
+          const nextScores = scores ?? [];
+          const index = nextScores.findIndex((item) => item.userId === user.id);
+
+          if (index >= 1) {
+            return nextScores.map((item) => {
+              return item.userId === user.id ? { ...item, value } : item;
+            });
+          }
+
+          return [...nextScores, { userId: user.id, value }];
+        }
+      );
+    });
   }
 
   off() {

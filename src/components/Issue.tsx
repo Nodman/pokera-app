@@ -87,7 +87,7 @@ export const Issue = () => {
           variant="body1"
           sx={{ wordBreak: "break-word", maxWidth: "80vw" }}
         >
-          {issue ? issue.description : "host should set ans issue"}
+          {issue ? issue.description : "host should add next issue to vote for"}
         </Typography>
         {user?.id === hostId ? (
           <IconButton

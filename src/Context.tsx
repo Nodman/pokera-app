@@ -86,6 +86,10 @@ export const AppContextProvider = ({
 
     const nextUser = user ?? { id: uuidv4(), name };
 
+    if (nextUser.name !== name) {
+      nextUser.name = name;
+    }
+
     localStorage.setItem("user", JSON.stringify(nextUser));
 
     setUser(nextUser);
